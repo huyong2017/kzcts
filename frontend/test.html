@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Cesium 测试</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.104.0/Widgets/widgets.css" />
+    <style>
+        html, body, #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="status">正在加载 Cesium...</div>
+    <div id="cesiumContainer"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.104.0/Cesium.js"></script>
+    <script>
+        try {
+            console.log('开始初始化 Cesium...');
+            
+            const viewer = new Cesium.Viewer('cesiumContainer', {
+                imageryProvider: new Cesium.OpenStreetMapImageryProvider({
+                    url: 'https://a.tile.openstreetmap.org/'
+                }),
+                terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+                baseLayerPicker: false,
+                geocoder: false,
+                homeButton: false,
+                sceneModePicker: false,
+                navigationHelpButton: false,
+                animation: false,
+                timeline: false,
+                fullscreenButton: false,
+                infoBox: false,
+                selectionIndicator: false
+            });
+            
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(110, 30, 8000000),
+                duration: 2
+            });
+            
+            document.getElementById('status').innerHTML = '✅ Cesium 加载成功！<br>如果能看到地球，说明一切正常。';
+            document.getElementById('status').style.background = 'rgba(82, 196, 26, 0.9)';
+            document.getElementById('status').style.color = 'white';
+            
+            console.log('Cesium 初始化成功');
+            
+        } catch (error) {
+            console.error('Cesium 初始化失败:', error);
+            document.getElementById('status').innerHTML = '❌ Cesium 加载失败<br>' + error.message;
+            document.getElementById('status').style.background = 'rgba(255, 77, 79, 0.9)';
+            document.getElementById('status').style.color = 'white';
+        }
+    </script>
+</body>
+</html>

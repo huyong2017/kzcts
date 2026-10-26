@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>空中飞机判读系统 - 3D 地球</title>
+    
+    <!-- Cesium CSS (CDN) -->
+    <link rel="stylesheet" href="https://unpkg.com/cesium@1.104.0/Build/Cesium/Widgets/widgets.css" />
+    
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="style.css?v=20261026x" />
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部控制栏 -->
+        <div id="control-bar">
+            <div class="control-section">
+                <h3>任务控制</h3>
+                <select id="task-selector">
+                    <option value="">选择任务...</option>
+                </select>
+                <button id="btn-create-task">创建新任务</button>
+                <button id="btn-task-list">任务列表</button>
+                <button id="btn-connect-task">连接任务</button>
+            </div>
+            
+            <div class="control-section">
+                <h3>态势显示</h3>
+                <label>
+                    <input type="checkbox" id="show-civilian" checked>
+                    显示民机
+                </label>
+                <label>
+                    <input type="checkbox" id="show-military" checked>
+                    显示军机
+                </label>
+                <label>
+                    <input type="checkbox" id="show-trajectory" checked>
+                    显示轨迹
+                </label>
+            </div>
+            
+            <div class="control-section">
+                <h3>连接状态</h3>
+                <div id="status-situation" class="status-item">
+                    <span class="status-dot"></span>
+                    <span class="status-text">态势: 未连接</span>
+                </div>
+                <div id="status-task" class="status-item">
+                    <span class="status-dot"></span>
+                    <span class="status-text">任务: 未连接</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 3D 地球容器 -->
+        <div id="cesiumContainer"></div>
+        
+        <!-- 信息面板 -->
+        <div id="info-panel" class="hidden">
+            <div class="panel-header">
+                <h3 id="panel-title">目标信息</h3>
+                <button id="btn-close-panel">×</button>
+            </div>
+            <div id="panel-content"></div>
+        </div>
+        
+        <!-- 任务创建面板（固定在左侧） -->
+        <div id="task-panel" class="task-panel hidden">
+            <div class="panel-header">
+                <h3>创建扫描任务</h3>
+                <button id="btn-close-task-panel">×</button>
+            </div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <label>任务名称:</label>
+                    <input type="text" id="task-name" placeholder="例如：华北地区红外扫描">
+                </div>
+                <div class="form-group">
+                    <label>传感器类型:</label>
+                    <select id="task-sensor">
+                        <option value="infrared">红外载荷</option>
+                        <option value="optical">光学载荷</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>扫描区域中心 (纬度,经度):</label>
+                    <input type="text" id="task-region-center" placeholder="例如：35.0,110.0" value="35.0,110.0">
+                </div>
+                <div class="form-group">
+                    <label>扫描范围 (固定, 度):</label>
+                    <input type="text" id="task-region-size" value="0.5,0.5" disabled style="background: #f0f0f0; color: #888;">
+                </div>
+                <div class="form-group">
+                    <label>扫描时长 (秒):</label>
+                    <input type="number" id="task-duration" value="120" min="30" max="600">
+                </div>
+                <div class="form-group">
+                    <label>扫描间隔 (秒):</label>
+                    <input type="number" id="task-interval" value="2.0" min="0.5" max="10" step="0.5">
+                </div>
+                <div class="form-group" style="margin-top: 20px;">
+                    <button id="btn-confirm-create-task" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                        创建任务
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 扫描区域预览矩形（在地图上显示） -->
+        
+        <!-- 任务列表面板（左侧） -->
+        <div id="task-list-panel" class="task-panel hidden">
+            <div class="panel-header">
+                <h3>任务列表</h3>
+                <button id="btn-close-task-list">×</button>
+            </div>
+            <div class="panel-body" id="task-list-items"></div>
+        </div>
+        
+        <!-- 任务详情面板（与列表同位置互斥显示） -->
+        <div id="task-detail-panel" class="task-panel hidden">
+            <div class="panel-header">
+                <h3>任务详情</h3>
+                <button id="btn-back-to-task-list" title="返回列表">‹</button>
+                <button id="btn-close-task-detail">×</button>
+            </div>
+            <div class="panel-body" id="task-detail-content"></div>
+        </div>
+        
+        <!-- 任务推荐通知 -->
+        <div id="recommendation-panel" class="hidden">
+            <div class="panel-header">
+                <h3>任务推荐</h3>
+                <button id="btn-close-recommendation">×</button>
+            </div>
+            <div id="recommendation-content"></div>
+        </div>
+        
+        <!-- 统计信息 -->
+        <div id="stats-bar">
+            <div class="stat-item">
+                <span class="stat-label">态势飞机:</span>
+                <span id="stat-aircraft" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">任务目标:</span>
+                <span id="stat-targets" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">检测点:</span>
+                <span id="stat-detections" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">帧数:</span>
+                <span id="stat-frames" class="stat-value">0</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cesium JS (CDN) -->
+    <script src="https://unpkg.com/cesium@1.104.0/Build/Cesium/Cesium.js"></script>
+    
+    <!-- 应用脚本 -->
+    <script src="app.js?v=20261026x"></script>
+</body>
+</html>

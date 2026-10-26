@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Cesium 最简测试</title>
+    <link rel="stylesheet" href="cesium-widgets.css" />
+    <style>
+        html, body, #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: #000;
+        }
+        #status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+        }
+        .success { color: #52c41a; font-weight: bold; }
+        .error { color: #ff4d4f; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="status">正在加载...</div>
+    <div id="cesiumContainer"></div>
+    
+    <script src="cesium.js"></script>
+    <script>
+        const statusDiv = document.getElementById('status');
+        
+        function updateStatus(message, isError = false) {
+            statusDiv.innerHTML = message;
+            statusDiv.className = isError ? 'error' : 'success';
+            console.log(message);
+        }
+        
+        // 检查 Cesium 是否加载
+        if (typeof Cesium === 'undefined') {
+            updateStatus('❌ Cesium 库未加载！<br><br>请检查：<br>1. cesium.js 文件是否存在<br>2. 浏览器 Console 错误', true);
+        } else {
+            updateStatus('✅ Cesium 库已加载，正在初始化...');
+            
+            try {
+                // 创建 Viewer（使用高德地图影像）
+                const viewer = new Cesium.Viewer('cesiumContainer', {
+                    // 使用高德地图影像（国内可用）
+                    imageryProvider: new Cesium.UrlTemplateImageryProvider({
+                        url: 'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+                        subdomains: ['1', '2', '3', '4'],
+                        maximumLevel: 18
+                    }),
+                    // 不使用地形
+                    terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+                    // 关闭所有 UI 控件
+                    baseLayerPicker: false,
+                    geocoder: false,
+                    homeButton: false,
+                    sceneModePicker: false,
+                    navigationHelpButton: false,
+                    animation: false,
+                    timeline: false,
+                    fullscreenButton: false,
+                    infoBox: false,
+                    selectionIndicator: false
+                });
+                
+                // 设置视角
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(110, 30, 10000000),
+                    duration: 2
+                });
+                
+                // 添加一个测试点
+                viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(116, 39, 100000),
+                    point: {
+                        pixelSize: 20,
+                        color: Cesium.Color.RED
+                    },
+                    label: {
+                        text: '北京',
+                        font: '16px sans-serif',
+                        fillColor: Cesium.Color.WHITE
+                    }
+                });
+                
+                updateStatus('✅ Cesium 初始化成功！<br>你应该能看到带地图纹理的地球和红色点（北京）。<br>地图瓦片正在加载中，请稍候...');
+                
+            } catch (error) {
+                console.error('初始化错误:', error);
+                updateStatus('❌ Cesium 初始化失败：<br>' + error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>
